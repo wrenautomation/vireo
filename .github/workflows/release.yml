@@ -1,0 +1,33 @@
+# A v* tag publishes to npm by trusted publishing (no stored token; provenance attached).
+# The first version went out by hand: npm sets a trusted publisher only on a package that exists.
+name: release
+on:
+  push: { tags: ["v*"] }
+  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # a tag for a version already on npm is history: stop quietly
+      - id: published
+        run: |
+          name="$(node -p 'require("./package.json").name')"
+          v="$(node -p 'require("./package.json").version')"
+          if npm view "$name@$v" version >/dev/null 2>&1; then
+            echo "$name@$v is already on npm"; echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.published.outputs.skip != 'true'
+        run: npm install -g npm@latest
+      - if: steps.published.outputs.skip != 'true'
+        run: npm publish --access public
