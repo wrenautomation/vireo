@@ -91,7 +91,7 @@ export function registerCommands(c: Command, host: CliHost): Command {
 
   c.command("add <subject> [file]")
     .description(
-      "One batch from JSON (file or stdin): {why, agent, samples:[{body | file | media, posterFile?, parent?, guides?, change?, source?}]}. Files go to the bucket",
+      "One batch from JSON (file or stdin): {why, agent, samples:[{body | file | media, posterFile?, parent?, guides?, change?, source?}]}. Files go to the bucket; media may be an https:// url (a live page)",
     )
     .action((s: string, file: string | undefined) =>
       run(async (v, db) => {

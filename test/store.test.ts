@@ -75,6 +75,21 @@ describe("vireo", () => {
     expect(list).toMatchObject({ samples: 3, kept: 1, toPick: 0 });
   });
 
+  it("takes a live page by link and refuses other schemes", async () => {
+    await v.newSubject({ slug: "bg", name: "Background", kind: "page", by: "me" });
+    const b = await v.addBatch("bg", {
+      why: "particles vs a flow field",
+      samples: [{ media: "https://a1b2c3.example.pages.dev/", poster: "s3://bucket/media/a.jpg" }],
+    });
+    const [open] = await v.queue("bg");
+    expect(open?.samples[0]?.media).toBe("https://a1b2c3.example.pages.dev/");
+    await v.closeBatch(b.batch, null, "me");
+    for (const media of ["http://plain.example/", "javascript:alert(1)", "data:text/html,x"])
+      await expect(v.addBatch("bg", { why: "bad scheme", samples: [{ media }] })).rejects.toThrow(
+        "s3:// or https://",
+      );
+  });
+
   it("ships, collects and ranks per segment", async () => {
     const [num, story] = (await v.feedback("hero")).batches[0]?.samples.map((s) => s.id) ?? [];
     await expect(v.ship(num as number, { channel: "mail", target: "x" }, "me")).rejects.toThrow(

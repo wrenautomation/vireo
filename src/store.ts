@@ -29,9 +29,12 @@ export interface Ports {
   hooks?: Hooks | undefined;
 }
 
+/** `s3://` (the bucket signs it) or `https://` (served as is: a live page on its own origin). */
+export const isMediaUri = (uri: string) => /^(s3|https):\/\/[^\s/]+/i.test(uri);
+
 export interface NewSample {
   body?: string | null;
-  /** s3:// uri; the CLI uploads a local file first. */
+  /** `s3://` uri (the CLI uploads a local file first), or `https://` for a live page. */
   media?: string | null;
   poster?: string | null;
   parent?: number | null;
@@ -169,6 +172,9 @@ export class Vireo {
     if (!b.samples.length) throw new VireoError("a batch needs samples");
     for (const s of b.samples)
       if (!s.body?.trim() && !s.media) throw new VireoError("each sample needs a body or a file");
+    for (const s of b.samples)
+      for (const uri of [s.media, s.poster])
+        if (uri && !isMediaUri(uri)) throw new VireoError("media and poster are s3:// or https://");
     for (const s of b.samples)
       if (s.source != null && !isSource(s.source))
         throw new VireoError("source needs a ref and spans of {s, e} seconds, e > s");

@@ -1,6 +1,6 @@
 {
   "name": "@wrenautomation/vireo",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "The variant loop: an agent makes a batch, a person marks it, the agent learns their taste, and real numbers per segment sit beside it.",
   "repository": {
     "type": "git",

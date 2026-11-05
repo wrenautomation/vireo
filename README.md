@@ -23,6 +23,10 @@ Data goes to a PGlite folder `.vireo/`, or to Postgres when `DATABASE_URL` is se
 on open. Files (`{"file": "cut.mp4"}`) go to `VIREO_BUCKET` (any S3: set `VIREO_S3_ENDPOINT` for
 R2 or MinIO). `VIREO_BY` names who acts.
 
+A page that runs code (WebGL, scroll scenes) is a link: deploy it, then add
+`{"media": "https://…", "posterFile": "still.jpg"}`. The host frames the link; vireo never serves
+it. Use a URL that does not change (a preview deploy), so a call stays tied to what was seen.
+
 ## Slot it into a system
 
 ```ts
