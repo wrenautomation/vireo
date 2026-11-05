@@ -5,8 +5,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { Command } from "commander";
-import type { Collector } from "./collect.js";
-import type { Db, Hooks } from "./db.js";
+import type { Db } from "./db.js";
 import { type Bucket, upload } from "./media.js";
 import {
   type Anchor,
@@ -18,14 +17,13 @@ import {
   VERDICTS,
   type Verdict,
 } from "./schema.js";
-import { type NewSample, Vireo } from "./store.js";
+import type { NewSample, Vireo } from "./store.js";
 
 export interface CliHost {
-  withDb<T>(fn: (db: Db) => Promise<T>): Promise<T>;
+  /** One command's vireo over the host's db, collectors and hooks; closes after. */
+  withVireo<T>(fn: (v: Vireo, db: Db) => Promise<T>): Promise<T>;
   /** Who acts: the audit actor and each row's `by`. */
   by: string;
-  collectors?: readonly Collector[];
-  hooks?: Hooks;
   /** Where `file`/`posterFile` go; none refuses them. */
   bucket?: Bucket;
   /** Fills a batch file's own fields (wren: `studio` → source); runs before upload. */
@@ -59,10 +57,7 @@ const many = (v: string, acc: string[]) => [...acc, v];
 export function registerCommands(c: Command, host: CliHost): Command {
   const by = host.by;
   const run = <T>(fn: (v: Vireo, db: Db) => Promise<T>) =>
-    host.withDb(async (db) =>
-      json(await fn(new Vireo({ db, collectors: host.collectors, hooks: host.hooks }), db)),
-    );
-  const channels = (host.collectors ?? []).map((x) => `${x.channel} (${x.target})`);
+    host.withVireo(async (v, db) => json(await fn(v, db)));
 
   c.command("new <slug>")
     .description("A subject to iterate on; --brief is the person's direction (none: from scratch)")
@@ -200,11 +195,24 @@ export function registerCommands(c: Command, host: CliHost): Command {
 
   c.command("ship <sample> <channel> <target>")
     .description(
-      `A sample goes live on a channel's target; its numbers come back per segment (\`live\`). Channels: ${channels.join(", ") || "none"}`,
+      "A sample goes live on a channel's target; its numbers come back per segment (`live`). `channels` lists them",
     )
     .option("--why <text>")
     .action((s: string, channel: string, target: string, o: { why?: string }) =>
       run((v) => v.ship(id(s), { channel, target, why: o.why ?? null }, by)),
+    );
+
+  c.command("channels")
+    .description("Channels this host collects: target id shape, rates, means")
+    .action(() =>
+      run(async (v) =>
+        v.collectors.map((x) => ({
+          channel: x.channel,
+          target: x.target,
+          rates: x.rates,
+          means: x.means ?? null,
+        })),
+      ),
     );
 
   c.command("unship <ship>")

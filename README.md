@@ -52,7 +52,7 @@ const { live } = await v.feedback("hero"); // rates, 95% range, P(best) per segm
 | `hooks.onWrite` | first step of each write: audit actor, session settings |
 | bucket | `s3Bucket({bucket, endpoint?})` for the CLI's uploads |
 
-Add the commands to your own CLI: `registerCommands(program.command("variants"), host)` from
+Add the commands to your own CLI: `registerCommands(program.command("variants"), {by, withVireo})` from
 `@wrenautomation/vireo/cli`. Render the read models (`queue`, `feedback`, `catalog`); their types
 are exported. Errors are `VireoError` with an HTTP status.
 

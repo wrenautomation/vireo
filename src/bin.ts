@@ -7,6 +7,7 @@ import { userInfo } from "node:os";
 import { Command } from "commander";
 import { registerCommands } from "./cli.js";
 import type { Db } from "./db.js";
+import { vireo } from "./index.js";
 import { s3Bucket } from "./media.js";
 import { MIGRATIONS } from "./migrations.js";
 
@@ -44,10 +45,10 @@ registerCommands(program, {
         }),
       }
     : {}),
-  async withDb(fn) {
+  async withVireo(fn) {
     const { db, close } = await open();
     try {
-      return await fn(db);
+      return await fn(vireo({ db }), db);
     } finally {
       await close();
     }
