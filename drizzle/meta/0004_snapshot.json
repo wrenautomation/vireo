@@ -1,0 +1,941 @@
+{
+  "id": "02b909b3-6ea0-4b45-8d12-8b4b905ce429",
+  "prevId": "17ecf42c-a22a-4bef-82ad-466fb6ed6f45",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "vireo.batches": {
+      "name": "batches",
+      "schema": "vireo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_id": {
+          "name": "subject_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "n": {
+          "name": "n",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "why": {
+          "name": "why",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent": {
+          "name": "agent",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_vireo_batches_subject": {
+          "name": "ix_vireo_batches_subject",
+          "columns": [
+            {
+              "expression": "subject_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fk_batches_subject_id_subjects": {
+          "name": "fk_batches_subject_id_subjects",
+          "tableFrom": "batches",
+          "tableTo": "subjects",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "subject_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_batches": {
+          "name": "pk_batches",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_vireo_batches_subject_n": {
+          "name": "uq_vireo_batches_subject_n",
+          "nullsNotDistinct": false,
+          "columns": [
+            "subject_id",
+            "n"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_vireo_batches_state": {
+          "name": "ck_vireo_batches_state",
+          "value": "(\"state\")::text = ANY ((ARRAY['open'::character varying, 'closed'::character varying])::text[])"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "vireo.guides": {
+      "name": "guides",
+      "schema": "vireo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'person'"
+        },
+        "ref": {
+          "name": "ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subject_id": {
+          "name": "subject_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'testing'"
+        },
+        "by": {
+          "name": "by",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_vireo_guides_subject": {
+          "name": "ix_vireo_guides_subject",
+          "columns": [
+            {
+              "expression": "subject_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fk_guides_subject_id_subjects": {
+          "name": "fk_guides_subject_id_subjects",
+          "tableFrom": "guides",
+          "tableTo": "subjects",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "subject_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_guides": {
+          "name": "pk_guides",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_vireo_guides_source": {
+          "name": "ck_vireo_guides_source",
+          "value": "(\"source\")::text = ANY ((ARRAY['person'::character varying, 'study'::character varying, 'sop'::character varying, 'skill'::character varying, 'agent'::character varying])::text[])"
+        },
+        "ck_vireo_guides_kind": {
+          "name": "ck_vireo_guides_kind",
+          "value": "(\"kind\")::text = ANY ((ARRAY['text'::character varying, 'image'::character varying, 'video'::character varying, 'page'::character varying])::text[])"
+        },
+        "ck_vireo_guides_state": {
+          "name": "ck_vireo_guides_state",
+          "value": "(\"state\")::text = ANY ((ARRAY['testing'::character varying, 'locked'::character varying, 'dropped'::character varying])::text[])"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "vireo.lineage": {
+      "name": "lineage",
+      "schema": "vireo",
+      "columns": {
+        "child_id": {
+          "name": "child_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "took": {
+          "name": "took",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "ix_vireo_lineage_parent": {
+          "name": "ix_vireo_lineage_parent",
+          "columns": [
+            {
+              "expression": "parent_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fk_lineage_child_id_samples": {
+          "name": "fk_lineage_child_id_samples",
+          "tableFrom": "lineage",
+          "tableTo": "samples",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "child_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_lineage_parent_id_samples": {
+          "name": "fk_lineage_parent_id_samples",
+          "tableFrom": "lineage",
+          "tableTo": "samples",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_lineage": {
+          "name": "pk_lineage",
+          "columns": [
+            "child_id",
+            "parent_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_vireo_lineage_not_self": {
+          "name": "ck_vireo_lineage_not_self",
+          "value": "\"child_id\" <> \"parent_id\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "vireo.notes": {
+      "name": "notes",
+      "schema": "vireo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sample_id": {
+          "name": "sample_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anchor": {
+          "name": "anchor",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tone": {
+          "name": "tone",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "by": {
+          "name": "by",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_vireo_notes_sample": {
+          "name": "ix_vireo_notes_sample",
+          "columns": [
+            {
+              "expression": "sample_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fk_notes_sample_id_samples": {
+          "name": "fk_notes_sample_id_samples",
+          "tableFrom": "notes",
+          "tableTo": "samples",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "sample_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_notes": {
+          "name": "pk_notes",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_vireo_notes_tone": {
+          "name": "ck_vireo_notes_tone",
+          "value": "(\"tone\")::text = ANY ((ARRAY['good'::character varying, 'bad'::character varying])::text[])"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "vireo.outcomes": {
+      "name": "outcomes",
+      "schema": "vireo",
+      "columns": {
+        "ship_id": {
+          "name": "ship_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "segment": {
+          "name": "segment",
+          "type": "varchar(160)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metric": {
+          "name": "metric",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fk_outcomes_ship_id_ships": {
+          "name": "fk_outcomes_ship_id_ships",
+          "tableFrom": "outcomes",
+          "tableTo": "ships",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "ship_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_outcomes": {
+          "name": "pk_outcomes",
+          "columns": [
+            "ship_id",
+            "segment",
+            "day",
+            "metric"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "vireo.samples": {
+      "name": "samples",
+      "schema": "vireo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_id": {
+          "name": "subject_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "media": {
+          "name": "media",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "poster": {
+          "name": "poster",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guides": {
+          "name": "guides",
+          "type": "integer[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::integer[]"
+        },
+        "change": {
+          "name": "change",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agent": {
+          "name": "agent",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score": {
+          "name": "score",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kept_at": {
+          "name": "kept_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_vireo_samples_batch": {
+          "name": "ix_vireo_samples_batch",
+          "columns": [
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ix_vireo_samples_subject": {
+          "name": "ix_vireo_samples_subject",
+          "columns": [
+            {
+              "expression": "subject_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fk_samples_batch_id_batches": {
+          "name": "fk_samples_batch_id_batches",
+          "tableFrom": "samples",
+          "tableTo": "batches",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "batch_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_samples_subject_id_subjects": {
+          "name": "fk_samples_subject_id_subjects",
+          "tableFrom": "samples",
+          "tableTo": "subjects",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "subject_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_samples": {
+          "name": "pk_samples",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_vireo_samples_verdict": {
+          "name": "ck_vireo_samples_verdict",
+          "value": "(\"verdict\")::text = ANY ((ARRAY['amazing'::character varying, 'good'::character varying, 'okay'::character varying, 'bad'::character varying])::text[])"
+        },
+        "ck_vireo_samples_score": {
+          "name": "ck_vireo_samples_score",
+          "value": "\"vireo\".\"samples\".\"score\" BETWEEN 1 AND 10"
+        },
+        "ck_vireo_samples_call": {
+          "name": "ck_vireo_samples_call",
+          "value": "\"vireo\".\"samples\".\"verdict\" IS NOT DISTINCT FROM (CASE WHEN \"vireo\".\"samples\".\"score\" >= 9 THEN 'amazing' WHEN \"vireo\".\"samples\".\"score\" >= 7 THEN 'good' WHEN \"vireo\".\"samples\".\"score\" >= 4 THEN 'okay' WHEN \"vireo\".\"samples\".\"score\" >= 1 THEN 'bad' END)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "vireo.ships": {
+      "name": "ships",
+      "schema": "vireo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sample_id": {
+          "name": "sample_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target": {
+          "name": "target",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "why": {
+          "name": "why",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "by": {
+          "name": "by",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "ix_vireo_ships_sample": {
+          "name": "ix_vireo_ships_sample",
+          "columns": [
+            {
+              "expression": "sample_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "fk_ships_sample_id_samples": {
+          "name": "fk_ships_sample_id_samples",
+          "tableFrom": "ships",
+          "tableTo": "samples",
+          "schemaTo": "vireo",
+          "columnsFrom": [
+            "sample_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_ships": {
+          "name": "pk_ships",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_vireo_ships_target": {
+          "name": "uq_vireo_ships_target",
+          "nullsNotDistinct": false,
+          "columns": [
+            "channel",
+            "target",
+            "sample_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "vireo.subjects": {
+      "name": "subjects",
+      "schema": "vireo",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "brief": {
+          "name": "brief",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seeds": {
+          "name": "seeds",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "state": {
+          "name": "state",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "by": {
+          "name": "by",
+          "type": "varchar(320)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "pk_subjects": {
+          "name": "pk_subjects",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "uq_vireo_subjects_slug": {
+          "name": "uq_vireo_subjects_slug",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_vireo_subjects_kind": {
+          "name": "ck_vireo_subjects_kind",
+          "value": "(\"kind\")::text = ANY ((ARRAY['text'::character varying, 'image'::character varying, 'video'::character varying, 'page'::character varying])::text[])"
+        },
+        "ck_vireo_subjects_state": {
+          "name": "ck_vireo_subjects_state",
+          "value": "(\"state\")::text = ANY ((ARRAY['open'::character varying, 'paused'::character varying, 'done'::character varying])::text[])"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "vireo": "vireo"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

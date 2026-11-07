@@ -17,8 +17,11 @@ import {
   samples,
   ships,
   subjects,
+  TAP,
   type Tone,
+  VERDICTS,
   type Verdict,
+  verdictOf,
 } from "./schema.js";
 import { fitPlackettLuce, rateSplit, type Strength, tiersToChoices } from "./stats.js";
 import { isSource, type Source } from "./sync.js";
@@ -61,9 +64,8 @@ export type GuideRow = typeof guides.$inferSelect;
 export type ShipRow = typeof ships.$inferSelect;
 
 const GOOD: readonly (string | null)[] = ["amazing", "good"];
-/** amazing > good > unmarked > bad; amazing's wins count double. */
-const TIER_WEIGHTS = [2, 1, 1];
-
+/** Unmarked in a judged batch reads as an okay 5: no call is a middling one. */
+const UNMARKED = 5;
 /** Fisher-Yates with Math.random: positions only hide the agent's order. */
 const shuffled = <T>(xs: readonly T[]) => {
   const a = [...xs];
@@ -74,18 +76,24 @@ const shuffled = <T>(xs: readonly T[]) => {
   return a;
 };
 
-/** Strength per judged sample: each batch with a verdict is a partial ranking. */
+/**
+ * Strength per judged sample: each judged batch is a partial ranking by score, 10 down to 1, ties
+ * unordered. Wins from 9 and up count double.
+ */
 export function strengths(
-  rows: readonly Pick<SampleRow, "id" | "batchId" | "verdict">[],
+  rows: readonly Pick<SampleRow, "id" | "batchId" | "score">[],
 ): Strength[] {
   const byBatch = new Map<number, (typeof rows)[number][]>();
   for (const r of rows) byBatch.set(r.batchId, [...(byBatch.get(r.batchId) ?? []), r]);
-  const judged = [...byBatch.values()].filter((b) => b.some((r) => r.verdict));
+  const judged = [...byBatch.values()].filter((b) => b.some((r) => r.score != null));
   const ids = judged.flat().map((r) => String(r.id));
-  const choices = judged.flatMap((b) => {
-    const of = (v: Verdict | null) => b.filter((r) => r.verdict === v).map((r) => String(r.id));
-    return tiersToChoices([of("amazing"), of("good"), of(null), of("bad")], TIER_WEIGHTS);
-  });
+  const scores = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+  const choices = judged.flatMap((b) =>
+    tiersToChoices(
+      scores.map((n) => b.filter((r) => (r.score ?? UNMARKED) === n).map((r) => String(r.id))),
+      scores.map((n) => (n >= TAP.amazing ? 2 : 1)),
+    ),
+  );
   return fitPlackettLuce(ids, choices);
 }
 
@@ -327,13 +335,17 @@ export class Vireo {
       .orderBy(asc(lineage.childId), asc(lineage.position));
   }
 
-  judge(sampleId: number, verdict: Verdict | null, by: string | null) {
+  /** A call: a 1-10 score, a verdict (its tap score) or null to clear. The verdict follows. */
+  async judge(sampleId: number, call: number | Verdict | null, by: string | null) {
+    const score = typeof call === "string" ? TAP[call] : call;
+    if (score != null && !(Number.isInteger(score) && score >= 1 && score <= 10))
+      throw new VireoError(`score ${score}: 1-10, or ${VERDICTS.join("|")}`, 400);
     return this.write(by, async (tx) => {
       const [row] = await tx
         .update(samples)
-        .set({ verdict })
+        .set({ score, verdict: score == null ? null : verdictOf(score) })
         .where(eq(samples.id, sampleId))
-        .returning({ id: samples.id, verdict: samples.verdict });
+        .returning({ id: samples.id, score: samples.score, verdict: samples.verdict });
       if (!row) throw new VireoError(`no sample ${sampleId}`, 404);
       return row;
     });

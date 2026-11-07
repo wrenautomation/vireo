@@ -75,6 +75,25 @@ describe("vireo", () => {
     expect(list).toMatchObject({ samples: 3, kept: 1, toPick: 0 });
   });
 
+  it("judges on a 1-10 score; the verdict is its zone", async () => {
+    await v.newSubject({ slug: "sc", name: "Scale", kind: "text", by: "me" });
+    const b = await v.addBatch("sc", {
+      why: "scale",
+      samples: [{ body: "a" }, { body: "b" }, { body: "c" }],
+    });
+    const [a1, b1, c1] = b.samples as [number, number, number];
+    expect(await v.judge(a1, 10, "me")).toMatchObject({ score: 10, verdict: "amazing" });
+    expect(await v.judge(b1, "okay", "me")).toMatchObject({ score: 5, verdict: "okay" });
+    expect(await v.judge(c1, 6, "me")).toMatchObject({ score: 6, verdict: "okay" });
+    await expect(v.judge(a1, 11, "me")).rejects.toMatchObject({ status: 400 });
+    await expect(v.judge(a1, 2.5, "me")).rejects.toMatchObject({ status: 400 });
+    expect(await v.judge(c1, null, "me")).toMatchObject({ score: null, verdict: null });
+    // a 6 beats a 5 inside one zone
+    await v.judge(c1, 6, "me");
+    const f = await v.feedback("sc");
+    expect(f.leaders.map((l) => l.sample)).toEqual([a1, c1, b1]);
+  });
+
   it("takes a live page by link and refuses other schemes", async () => {
     await v.newSubject({ slug: "bg", name: "Background", kind: "page", by: "me" });
     const b = await v.addBatch("bg", {

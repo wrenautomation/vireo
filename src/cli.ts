@@ -126,13 +126,17 @@ export function registerCommands(c: Command, host: CliHost): Command {
     .description("Open batches waiting on the person, with their samples and notes")
     .action((s?: string) => run((v) => v.queue(s)));
 
-  c.command("judge <sample> <verdict>")
-    .description(`${VERDICTS.join("|")}|clear`)
-    .action((s: string, verdict: string) =>
+  c.command("judge <sample> <call>")
+    .description(`1-10, ${VERDICTS.join("|")} (its tap score) or clear`)
+    .action((s: string, call: string) =>
       run((v) =>
         v.judge(
           id(s),
-          verdict === "clear" ? null : oneOf<Verdict>(verdict, VERDICTS, "verdict"),
+          call === "clear"
+            ? null
+            : /^\d+$/.test(call)
+              ? Number(call)
+              : oneOf<Verdict>(call, VERDICTS, "call"),
           by,
         ),
       ),

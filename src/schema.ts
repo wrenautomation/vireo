@@ -36,9 +36,21 @@ export const KINDS = ["text", "image", "video", "page"] as const;
 export type Kind = (typeof KINDS)[number];
 export const SUBJECT_STATES = ["open", "paused", "done"] as const;
 export const BATCH_STATES = ["open", "closed"] as const;
-/** The person's call on a whole sample. */
-export const VERDICTS = ["amazing", "good", "bad"] as const;
+/** The person's call on a whole sample, best first: a zone of the 1-10 score (D9). */
+export const VERDICTS = ["amazing", "good", "okay", "bad"] as const;
 export type Verdict = (typeof VERDICTS)[number];
+/** Lowest score of each zone: 9-10 amazing, 7-8 good, 4-6 okay, 1-3 bad. */
+export const ZONE_FLOOR = { amazing: 9, good: 7, okay: 4, bad: 1 } as const satisfies Record<
+  Verdict,
+  number
+>;
+/** The score a plain call (a tap, `judge 3 good`) sets. */
+export const TAP = { amazing: 9, good: 7, okay: 5, bad: 2 } as const satisfies Record<
+  Verdict,
+  number
+>;
+export const verdictOf = (score: number): Verdict =>
+  VERDICTS.find((v) => score >= ZONE_FLOOR[v]) ?? "bad";
 export const TONES = ["good", "bad"] as const;
 export type Tone = (typeof TONES)[number];
 export const GUIDE_SOURCES = ["person", "study", "sop", "skill", "agent"] as const;
@@ -138,6 +150,8 @@ export const samples = vireo.table(
     /** What changed from the parent, in the agent's words; hidden while the person judges. */
     change: text("change"),
     agent: varchar("agent", { length: 120 }),
+    /** The person's 1-10 score; `verdict` is its zone, kept in step by a check. */
+    score: smallint("score"),
     verdict: varchar("verdict", { length: 8, enum: VERDICTS }),
     /** In the catalog. */
     keptAt: at("kept_at"),
@@ -158,6 +172,11 @@ export const samples = vireo.table(
     index("ix_vireo_samples_batch").on(t.batchId),
     index("ix_vireo_samples_subject").on(t.subjectId),
     oneOf("ck_vireo_samples_verdict", t.verdict, VERDICTS),
+    check("ck_vireo_samples_score", sql`${t.score} BETWEEN 1 AND 10`),
+    check(
+      "ck_vireo_samples_call",
+      sql`${t.verdict} IS NOT DISTINCT FROM (CASE WHEN ${t.score} >= 9 THEN 'amazing' WHEN ${t.score} >= 7 THEN 'good' WHEN ${t.score} >= 4 THEN 'okay' WHEN ${t.score} >= 1 THEN 'bad' END)`,
+    ),
   ],
 );
 

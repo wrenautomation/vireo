@@ -1,7 +1,7 @@
 # vireo
 
 The variant loop. An agent makes a batch of samples (copy, cuts, images, pages). A person marks
-each one Amazing, Good or Bad, with notes pinned to words, a box or a time. The agent reads the
+each one on a 1-10 score (zones Bad, Okay, Good, Amazing), with notes pinned to words, a box or a time. The agent reads the
 calls and makes the next batch. Ship a sample and its real numbers come back per segment, beside
 the taste rank.
 
@@ -13,7 +13,7 @@ Vireo is the backend: tables, the store, stats, collectors, a CLI. The host rend
 npx @wrenautomation/vireo new hero --name "Hero line" --kind text
 echo '{"why":"number first vs story first","samples":[{"body":"3x replies"},{"body":"A story"}]}' \
   | npx @wrenautomation/vireo add hero
-npx @wrenautomation/vireo judge 1 amazing
+npx @wrenautomation/vireo judge 1 amazing   # or a score: judge 1 8
 npx @wrenautomation/vireo note 1 --quote "3x" --tone good
 npx @wrenautomation/vireo close 1 --note "more numbers"
 npx @wrenautomation/vireo show hero      # what the agent reads for the next batch
@@ -79,7 +79,7 @@ are exported. Errors are `VireoError` with an HTTP status.
 
 ## How it ranks
 
-Each judged batch is a partial ranking: Amazing > Good > unmarked > Bad. Plackett-Luce fits a
+Each judged batch is a partial ranking by score, 10 down to 1; unmarked reads as 5. Plackett-Luce fits a
 strength per sample across batches. Guides (tips under test) get a with-vs-without good rate.
 Live numbers get a Wilson 95% range and P(best) from Beta posteriors.
 
