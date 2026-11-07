@@ -1,0 +1,1 @@
+ALTER TABLE "vireo"."samples" DROP COLUMN "parent_id";

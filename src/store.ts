@@ -12,6 +12,7 @@ import {
   type GuideState,
   guides,
   type Kind,
+  lineage,
   notes,
   samples,
   ships,
@@ -37,12 +38,20 @@ export interface NewSample {
   /** `s3://` uri (the CLI uploads a local file first), or `https://` for a live page. */
   media?: string | null;
   poster?: string | null;
-  parent?: number | null;
+  /** Short name (60 chars at most), hidden while the person judges. */
+  name?: string | null;
+  /** Earlier samples of the same subject; the first is the main parent. Two or more = a cross. */
+  parents?: readonly Parent[];
   guides?: number[];
   change?: string | null;
   /** A video's footage and kept spans, for synced play. */
   source?: Source | null;
 }
+
+/** A parent's id, or the id with what the child took from it. */
+export type Parent = number | { id: number; took?: string | null };
+const parentOf = (p: Parent) =>
+  typeof p === "number" ? { id: p, took: null } : { id: p.id, took: p.took?.trim() || null };
 
 export type SubjectRow = typeof subjects.$inferSelect;
 export type BatchRow = typeof batches.$inferSelect;
@@ -178,8 +187,29 @@ export class Vireo {
     for (const s of b.samples)
       if (s.source != null && !isSource(s.source))
         throw new VireoError("source needs a ref and spans of {s, e} seconds, e > s");
+    for (const s of b.samples) {
+      if (s.name != null && s.name.trim().length > 60)
+        throw new VireoError("a name is 60 characters at most");
+      const ids = (s.parents ?? []).map((p) => parentOf(p).id);
+      if (ids.some((i) => !Number.isSafeInteger(i) || i <= 0))
+        throw new VireoError("parents are sample ids");
+      if (new Set(ids).size < ids.length) throw new VireoError("a parent is named twice");
+    }
     return this.write(b.agent ?? null, async (tx) => {
       const subject = await this.subjectOf(ref, tx);
+      const wanted = [
+        ...new Set(b.samples.flatMap((s) => (s.parents ?? []).map((p) => parentOf(p).id))),
+      ];
+      if (wanted.length) {
+        const found = await tx
+          .select({ id: samples.id })
+          .from(samples)
+          .where(and(inArray(samples.id, wanted), eq(samples.subjectId, subject.id)));
+        const have = new Set(found.map((r) => r.id));
+        const gone = wanted.filter((i) => !have.has(i));
+        if (gone.length)
+          throw new VireoError(`not a sample of ${subject.slug}: ${gone.join(", ")}`);
+      }
       const [batch] = await tx
         .insert(batches)
         .values({ subjectId: subject.id, why: b.why, agent: b.agent ?? null })
@@ -196,13 +226,23 @@ export class Vireo {
             media: s.media ?? null,
             poster: s.poster ?? null,
             source: s.source ?? null,
-            parentId: s.parent ?? null,
+            name: s.name?.trim() || null,
             guides: s.guides ?? [],
             change: s.change ?? null,
             agent: b.agent ?? null,
           })),
         )
         .returning({ id: samples.id });
+      // returning keeps insert order: rows[i] is b.samples[i]
+      const edges = b.samples.flatMap((s, i) =>
+        (s.parents ?? []).map((p, position) => ({
+          childId: rows[i]?.id as number,
+          parentId: parentOf(p).id,
+          position,
+          took: parentOf(p).took,
+        })),
+      );
+      if (edges.length) await tx.insert(lineage).values(edges);
       return { batch: batch?.id as number, subject: subject.slug, samples: rows.map((r) => r.id) };
     });
   }
@@ -246,6 +286,16 @@ export class Vireo {
       .from(notes)
       .where(inArray(notes.sampleId, sampleIds))
       .orderBy(asc(notes.createdAt));
+  }
+
+  /** Parent edges of these children, main parent first. */
+  private async lineageOf(childIds: number[]) {
+    if (!childIds.length) return [];
+    return this.db
+      .select()
+      .from(lineage)
+      .where(inArray(lineage.childId, childIds))
+      .orderBy(asc(lineage.childId), asc(lineage.position));
   }
 
   judge(sampleId: number, verdict: Verdict | null, by: string | null) {
@@ -380,6 +430,7 @@ export class Vireo {
       .where(eq(samples.subjectId, s.id))
       .orderBy(asc(samples.batchId), asc(samples.position));
     const ns = await this.notesOf(ss.map((r) => r.id));
+    const es = await this.lineageOf(ss.map((r) => r.id));
     const judgedBatches = new Set(bs.filter((b) => b.state === "closed").map((b) => b.id));
     const judged = ss.filter((r) => judgedBatches.has(r.batchId));
     const strength = new Map(strengths(ss).map((x) => [Number(x.id), x]));
@@ -398,6 +449,9 @@ export class Vireo {
             ...r,
             strength: strength.get(r.id) ?? null,
             notes: ns.filter((n) => n.sampleId === r.id),
+            parents: es
+              .filter((e) => e.childId === r.id)
+              .map((e) => ({ id: e.parentId, took: e.took })),
           })),
         };
       }),

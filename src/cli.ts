@@ -91,7 +91,7 @@ export function registerCommands(c: Command, host: CliHost): Command {
 
   c.command("add <subject> [file]")
     .description(
-      "One batch from JSON (file or stdin): {why, agent, samples:[{body | file | media, posterFile?, parent?, guides?, change?, source?}]}. Files go to the bucket; media may be an https:// url (a live page)",
+      "One batch from JSON (file or stdin): {why, agent, samples:[{body | file | media, posterFile?, name?, parents?: [id | {id, took}], guides?, change?, source?}]}. Files go to the bucket; media may be an https:// url (a live page)",
     )
     .action((s: string, file: string | undefined) =>
       run(async (v, db) => {
@@ -106,11 +106,13 @@ export function registerCommands(c: Command, host: CliHost): Command {
         for (const x of b.samples ?? []) {
           const own = host.resolve ? await host.resolve(x, db) : {};
           const y = { ...x, ...own };
+          if ("parent" in y) throw new Error("parent is now parents: [id] or [{id, took}]");
           samples.push({
             body: y.body ?? null,
             media: y.media ?? (await up(y.file)),
             poster: y.poster ?? (await up(y.posterFile)),
-            parent: y.parent ?? null,
+            name: y.name ?? null,
+            parents: y.parents ?? [],
             guides: y.guides ?? [],
             change: y.change ?? null,
             source: y.source ?? null,

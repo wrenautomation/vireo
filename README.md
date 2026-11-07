@@ -23,6 +23,10 @@ Data goes to a PGlite folder `.vireo/`, or to Postgres when `DATABASE_URL` is se
 on open. Files (`{"file": "cut.mp4"}`) go to `VIREO_BUCKET` (any S3: set `VIREO_S3_ENDPOINT` for
 R2 or MinIO). `VIREO_BY` names who acts.
 
+Lineage: `{"name": "Warm grid", "parents": [{"id": 4, "took": "the palette"}, 7], "change": "…"}`.
+The first parent is the main one; two or more make a cross. `name`, `took` and `change` are for
+the agent and the tree: a host hides them while the person judges.
+
 A page that runs code (WebGL, scroll scenes) is a link: deploy it, then add
 `{"media": "https://…", "posterFile": "still.jpg"}`. The host frames the link; vireo never serves
 it. Use a URL that does not change (a preview deploy), so a call stays tied to what was seen.

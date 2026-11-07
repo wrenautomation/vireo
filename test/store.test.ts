@@ -123,4 +123,44 @@ describe("vireo", () => {
     await expect(v.unship(a.id, "me")).rejects.toMatchObject({ status: 404 });
     expect((await v.shipsOf("hero")).length).toBe(2);
   });
+
+  it("keeps lineage: names, crosses, what each parent gave", async () => {
+    await v.newSubject({ slug: "cross", name: "Cross", kind: "text", by: "me" });
+    const a = await v.addBatch("cross", {
+      why: "two seeds",
+      samples: [{ body: "warm", name: "Warm" }, { body: "grid" }],
+    });
+    const [warm, grid] = a.samples as [number, number];
+    await v.closeBatch(a.batch, null, "me");
+    const b = await v.addBatch("cross", {
+      why: "cross them",
+      samples: [
+        {
+          body: "warm grid",
+          name: "Warm grid",
+          parents: [{ id: warm, took: "the palette" }, grid],
+        },
+      ],
+    });
+    const f = await v.feedback("cross");
+    const child = f.batches[1]?.samples[0];
+    expect(child?.name).toBe("Warm grid");
+    expect(child?.parents).toEqual([
+      { id: warm, took: "the palette" },
+      { id: grid, took: null },
+    ]);
+    expect(f.batches[0]?.samples.find((s) => s.id === warm)?.parents).toEqual([]);
+    expect(b.samples).toHaveLength(1);
+
+    const other = (await v.feedback("hero")).batches[0]?.samples[0]?.id as number;
+    await expect(
+      v.addBatch("cross", { why: "x", samples: [{ body: "x", parents: [other] }] }),
+    ).rejects.toThrow(/not a sample of cross/);
+    await expect(
+      v.addBatch("cross", { why: "x", samples: [{ body: "x", parents: [warm, warm] }] }),
+    ).rejects.toThrow(/twice/);
+    await expect(
+      v.addBatch("cross", { why: "x", samples: [{ body: "x", name: "n".repeat(61) }] }),
+    ).rejects.toThrow(/60/);
+  });
 });

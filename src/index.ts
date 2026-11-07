@@ -15,6 +15,7 @@ export {
   guideStats,
   type NewSample,
   type NoteRow,
+  type Parent,
   type Ports,
   type Queue,
   type SampleRow,

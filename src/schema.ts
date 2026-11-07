@@ -128,7 +128,8 @@ export const samples = vireo.table(
     poster: text("poster"),
     /** A video's footage and kept spans: cuts of the same footage play in step (`sync.ts`). */
     source: jsonb("source").$type<Source>(),
-    parentId: integer("parent_id"),
+    /** Short name the agent gives it ("Star system"); hidden while the person judges. */
+    name: varchar("name", { length: 60 }),
     /** Guide ids this sample applied: a guide's with-vs-without rate reads these. */
     guides: integer("guides").array().notNull().default(sql`'{}'::integer[]`),
     /** What changed from the parent, in the agent's words; hidden while the person judges. */
@@ -154,6 +155,36 @@ export const samples = vireo.table(
     index("ix_vireo_samples_batch").on(t.batchId),
     index("ix_vireo_samples_subject").on(t.subjectId),
     oneOf("ck_vireo_samples_verdict", t.verdict, VERDICTS),
+  ],
+);
+
+/**
+ * Where a sample came from: one row per parent, so a cross is two rows. `took` = what the child
+ * kept from that parent, in the agent's words; hidden while the person judges, like `change`.
+ */
+export const lineage = vireo.table(
+  "lineage",
+  {
+    childId: integer("child_id").notNull(),
+    parentId: integer("parent_id").notNull(),
+    /** 0 = main parent: the tree places the child under it. */
+    position: smallint("position").notNull().default(0),
+    took: text("took"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.childId, t.parentId], name: "pk_lineage" }),
+    foreignKey({
+      columns: [t.childId],
+      foreignColumns: [samples.id],
+      name: "fk_lineage_child_id_samples",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [t.parentId],
+      foreignColumns: [samples.id],
+      name: "fk_lineage_parent_id_samples",
+    }).onDelete("cascade"),
+    index("ix_vireo_lineage_parent").on(t.parentId),
+    check("ck_vireo_lineage_not_self", sql.raw(`"child_id" <> "parent_id"`)),
   ],
 );
 
