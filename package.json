@@ -1,6 +1,6 @@
 {
   "name": "@wrenautomation/vireo",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "The variant loop: an agent makes a batch, a person marks it, the agent learns their taste, and real numbers per segment sit beside it.",
   "repository": {
     "type": "git",
@@ -40,6 +40,10 @@
     "./stats": {
       "types": "./dist/stats.d.ts",
       "default": "./dist/stats.js"
+    },
+    "./calls": {
+      "types": "./dist/calls.d.ts",
+      "default": "./dist/calls.js"
     },
     "./sync": {
       "types": "./dist/sync.d.ts",
