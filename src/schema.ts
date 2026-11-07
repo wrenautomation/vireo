@@ -90,6 +90,8 @@ export const batches = vireo.table(
   {
     id: serial("id"),
     subjectId: integer("subject_id").notNull(),
+    /** Batch number within its subject, from 1; kept when another batch is deleted */
+    n: integer("n").notNull(),
     /** The agent's why: what it changed from the last batch and what it tests. */
     why: text("why").notNull(),
     /** Agent id (session or run) that made it. */
@@ -108,6 +110,7 @@ export const batches = vireo.table(
       name: "fk_batches_subject_id_subjects",
     }).onDelete("cascade"),
     index("ix_vireo_batches_subject").on(t.subjectId, t.state),
+    unique("uq_vireo_batches_subject_n").on(t.subjectId, t.n),
     oneOf("ck_vireo_batches_state", t.state, BATCH_STATES),
   ],
 );

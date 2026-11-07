@@ -127,6 +127,20 @@ export class Vireo {
     return row;
   }
 
+  /** A batch by id, or `<subject>:<n>` (its number within the subject). */
+  async batchOf(ref: string | number, db: Db | Tx = this.db): Promise<number> {
+    if (typeof ref === "number" || /^\d+$/.test(ref)) return Number(ref);
+    const m = /^(.+):(\d+)$/.exec(ref);
+    if (!m) throw new VireoError(`a batch is an id or <subject>:<n>, not ${ref}`);
+    const subject = await this.subjectOf(m[1] as string, db);
+    const [row] = await db
+      .select({ id: batches.id })
+      .from(batches)
+      .where(and(eq(batches.subjectId, subject.id), eq(batches.n, Number(m[2]))));
+    if (!row) throw new VireoError(`no batch ${ref}`, 404);
+    return row.id;
+  }
+
   newSubject(s: {
     slug: string;
     name: string;
@@ -197,6 +211,16 @@ export class Vireo {
     }
     return this.write(b.agent ?? null, async (tx) => {
       const subject = await this.subjectOf(ref, tx);
+      // lock the subject: two adds at once must not take the same number
+      await tx
+        .select({ id: subjects.id })
+        .from(subjects)
+        .where(eq(subjects.id, subject.id))
+        .for("update");
+      const [top] = await tx
+        .select({ n: sql<number>`coalesce(max(${batches.n}), 0)::int` })
+        .from(batches)
+        .where(eq(batches.subjectId, subject.id));
       const wanted = [
         ...new Set(b.samples.flatMap((s) => (s.parents ?? []).map((p) => parentOf(p).id))),
       ];
@@ -212,7 +236,7 @@ export class Vireo {
       }
       const [batch] = await tx
         .insert(batches)
-        .values({ subjectId: subject.id, why: b.why, agent: b.agent ?? null })
+        .values({ subjectId: subject.id, n: (top?.n ?? 0) + 1, why: b.why, agent: b.agent ?? null })
         .returning();
       const order = shuffled(b.samples.map((_, i) => i));
       const rows = await tx
@@ -243,7 +267,12 @@ export class Vireo {
         })),
       );
       if (edges.length) await tx.insert(lineage).values(edges);
-      return { batch: batch?.id as number, subject: subject.slug, samples: rows.map((r) => r.id) };
+      return {
+        batch: batch?.id as number,
+        n: batch?.n as number,
+        subject: subject.slug,
+        samples: rows.map((r) => r.id),
+      };
     });
   }
 
@@ -339,14 +368,15 @@ export class Vireo {
   }
 
   /** Close a batch: the person's note goes to the agent with the marks. */
-  closeBatch(batchId: number, note: string | null, by: string | null) {
+  closeBatch(ref: number | string, note: string | null, by: string | null) {
     return this.write(by, async (tx) => {
+      const batchId = await this.batchOf(ref, tx);
       const [row] = await tx
         .update(batches)
         .set({ state: "closed", note: note?.trim() || null, closedAt: new Date() })
         .where(eq(batches.id, batchId))
-        .returning({ id: batches.id, subjectId: batches.subjectId });
-      if (!row) throw new VireoError(`no batch ${batchId}`, 404);
+        .returning({ id: batches.id, n: batches.n, subjectId: batches.subjectId });
+      if (!row) throw new VireoError(`no batch ${ref}`, 404);
       return row;
     });
   }

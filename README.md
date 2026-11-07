@@ -27,6 +27,9 @@ Lineage: `{"name": "Warm grid", "parents": [{"id": 4, "took": "the palette"}, 7]
 The first parent is the main one; two or more make a cross. `name`, `took` and `change` are for
 the agent and the tree: a host hides them while the person judges.
 
+Batches count per subject (`n`, from 1; a deleted batch leaves a gap). `close hero:3` closes
+batch 3 of `hero`; a plain id still works.
+
 A page that runs code (WebGL, scroll scenes) is a link: deploy it, then add
 `{"media": "https://…", "posterFile": "still.jpg"}`. The host frames the link; vireo never serves
 it. Use a URL that does not change (a preview deploy), so a call stays tied to what was seen.

@@ -124,6 +124,20 @@ describe("vireo", () => {
     expect((await v.shipsOf("hero")).length).toBe(2);
   });
 
+  it("numbers batches per subject and closes by <subject>:<n>", async () => {
+    await v.newSubject({ slug: "count", name: "Count", kind: "text", by: "me" });
+    const one = await v.addBatch("count", { why: "first", samples: [{ body: "a" }] });
+    const two = await v.addBatch("count", { why: "second", samples: [{ body: "b" }] });
+    expect([one.n, two.n]).toEqual([1, 2]);
+    expect(two.batch).toBeGreaterThan(2); // other subjects took lower ids
+    const closed = await v.closeBatch("count:2", "ok", "me");
+    expect(closed).toMatchObject({ id: two.batch, n: 2 });
+    await expect(v.closeBatch("count:9", null, "me")).rejects.toMatchObject({ status: 404 });
+    await expect(v.closeBatch("count", null, "me")).rejects.toThrow(/<subject>:<n>/);
+    const f = await v.feedback("count");
+    expect(f.batches.map((b) => b.n)).toEqual([1, 2]);
+  });
+
   it("keeps lineage: names, crosses, what each parent gave", async () => {
     await v.newSubject({ slug: "cross", name: "Cross", kind: "text", by: "me" });
     const a = await v.addBatch("cross", {

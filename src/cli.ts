@@ -171,11 +171,9 @@ export function registerCommands(c: Command, host: CliHost): Command {
     );
 
   c.command("close <batch>")
-    .description("Close a batch; --note is the guide for the next one")
+    .description("Close a batch (id or <subject>:<n>); --note is the guide for the next one")
     .option("--note <text>")
-    .action((b: string, o: { note?: string }) =>
-      run((v) => v.closeBatch(id(b), o.note ?? null, by)),
-    );
+    .action((b: string, o: { note?: string }) => run((v) => v.closeBatch(b, o.note ?? null, by)));
 
   c.command("keep <sample>")
     .description("Put a sample in the catalog (--off takes it out)")
